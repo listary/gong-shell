@@ -252,10 +252,18 @@ namespace GongSolutions.Shell
         /// </returns>
         public string GetDisplayName(SIGDN sigdn)
         {
-            IntPtr resultPtr = m_ComInterface.GetDisplayName(sigdn);
+            try
+            {
+                IntPtr resultPtr = m_ComInterface.GetDisplayName(sigdn);
             string result = Marshal.PtrToStringUni(resultPtr);
             Marshal.FreeCoTaskMem(resultPtr);
-            return result;
+                return result;
+            }catch(Exception)
+            {
+                return "";
+            }
+            
+            
         }
 
         /// <summary>

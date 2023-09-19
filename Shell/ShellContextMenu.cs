@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -115,6 +116,7 @@ namespace GongSolutions.Shell
         /// </returns>
         public bool HandleMenuMessage(ref Message m)
         {
+            Debug.WriteLine($"msg: {DateTime.Now} {m.HWnd}, {m.Msg:X}, {m.LParam}, {m.WParam}");
             if ((m.Msg == (int)MSG.WM_COMMAND) && ((int)m.WParam >= m_CmdFirst))
             {
                 InvokeCommand((int)m.WParam - m_CmdFirst);
@@ -122,6 +124,12 @@ namespace GongSolutions.Shell
             }
             else
             {
+                return false;
+                if (m.Msg != 0x0117)
+                {
+                    return false;
+                }
+
                 if (m_ComInterface3 != null)
                 {
                     IntPtr result;
@@ -228,6 +236,49 @@ namespace GongSolutions.Shell
             RemoveShellMenuItems(menu);
             m_ComInterface.QueryContextMenu(menu.Handle, 0,
                 m_CmdFirst, int.MaxValue, CMF.EXPLORE);
+
+            a(menu);
+            
+        }
+
+        private void a(Menu menu)
+        {
+                        const int tag = 0xAB;
+            List<int> remove = new List<int>();
+            int count = User32.GetMenuItemCount(menu.Handle);
+            MENUINFO menuInfo = new MENUINFO();
+            MENUITEMINFO itemInfo = new MENUITEMINFO();
+
+            menuInfo.cbSize = (UInt32)Marshal.SizeOf(menuInfo);
+            menuInfo.fMask = MIM.MIM_MENUDATA;
+            itemInfo.cbSize = (UInt32)Marshal.SizeOf(itemInfo);
+            itemInfo.fMask = MIIM.MIIM_ID | MIIM.MIIM_SUBMENU;
+
+
+            for (int n = 0; n < count; ++n)
+            {
+                User32.GetMenuItemInfo(menu.Handle, n, true, ref itemInfo);
+
+                if (itemInfo.hSubMenu == IntPtr.Zero)
+                {
+                    // If the item has no submenu we can't get the tag, so 
+                    // check its ID to determine if it was added by the shell.
+                    if (itemInfo.wID >= m_CmdFirst) remove.Add(n);
+                }
+                else
+                {
+                    User32.GetMenuInfo(itemInfo.hSubMenu, ref menuInfo);
+                    if ((int)menuInfo.dwMenuData != tag) remove.Add(n);
+                }
+
+                if (n == 10)
+                {
+                    IntPtr result;
+                    m_ComInterface3?.HandleMenuMsg2(0x117, itemInfo.hSubMenu, new IntPtr(n), out result);
+                    Debug.WriteLine($"Init: {n}, {itemInfo.hSubMenu}, {menu.Handle}");
+                }
+                
+            }
         }
 
         /// <summary>
@@ -316,6 +367,7 @@ namespace GongSolutions.Shell
             invoke.cbSize = Marshal.SizeOf(invoke);
             invoke.iVerb = index;
             invoke.nShow = SW_SHOWNORMAL;
+            Debug.WriteLine($"Verb: {index}");
             m_ComInterface2.InvokeCommand(ref invoke);
         }
 

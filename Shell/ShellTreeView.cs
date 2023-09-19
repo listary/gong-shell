@@ -372,7 +372,7 @@ namespace GongSolutions.Shell
         void RefreshItem(TreeNode node)
         {
             ShellItem folder = (ShellItem)node.Tag;
-            node.Text = folder.DisplayName;
+            node.Text = folder?.DisplayName ?? "";
             SetNodeImage(node);
 
             if (NodeHasChildren(node))
@@ -402,7 +402,7 @@ namespace GongSolutions.Shell
             }
             else if (node.Nodes.Count == 0)
             {
-                if (folder.HasSubFolders)
+                if (folder?.HasSubFolders ?? false)
                 {
                     node.Nodes.Add("");
                 }
@@ -470,6 +470,8 @@ namespace GongSolutions.Shell
         {
             TVITEMW itemInfo = new TVITEMW();
             ShellItem folder = (ShellItem)node.Tag;
+            if (folder is null)
+                return;
 
             // We need to set the images for the item by sending a 
             // TVM_SETITEMW message, as we need to set the overlay images,
